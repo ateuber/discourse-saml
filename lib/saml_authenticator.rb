@@ -208,6 +208,11 @@ class SamlAuthenticator < ::Auth::OAuth2Authenticator
     group_attribute = GlobalSetting.try(:saml_groups_attribute) || 'memberOf'
     user_group_list = (attributes[group_attribute] || []).map(&:downcase)
 
+    if GlobalSetting.try(:saml_groups_removeldap)
+      # UCS transmits cn=groupname,cn=groups,dc=example,dc=com, so we need to remove things
+      user_group_list = user_group_list.map{|group| group.split(',').first.split('=').last}
+    end
+
     if groups_fullsync
       user_has_groups = user.groups.where(automatic: false).pluck(:name).map(&:downcase)
       if user_has_groups.present?
